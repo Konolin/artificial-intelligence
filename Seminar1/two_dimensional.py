@@ -3,6 +3,7 @@ import random
 rows = 6
 columns = 6
 
+
 class Thing:
     """This represents any physical object that can appear in an Environment.
     You subclass Thing to get the things you want. Each thing can have a
@@ -57,11 +58,36 @@ def TraceAgent(agent):
 
 
 def ReflexVacuumAgent():
-    """A reflex agent for the two-state vacuum environment. [Figure 2.8]"""
-
+    """A reflex agent for the two-state vacuum environment."""
     def program(percept):
-        # TODO
-        pass
+        """Makes a cycle for the traversal of the 2d array
+        (!! works only for 2d arrays with an even number of rows)
+        Example 4x4 2d array:
+               1 2 3 4
+            0: v < < <
+            1: > > v ^
+            2: v < < ^
+            3: > > > ^ """
+        location, status = percept
+        row, col = location
+
+        if status == 'Dirty':
+            return 'Suck'
+
+        if col == columns - 1:
+            if row == 0:
+                return 'Left'
+            return 'Up'
+
+        if row % 2 == 1:
+            if col == columns - 2 and row != rows - 1:
+                return 'Down'
+            return 'Right'
+
+        if row % 2 == 0:
+            if col == 0:
+                return 'Down'
+            return 'Left'
 
     return Agent(program)
 
@@ -72,8 +98,30 @@ def ModelBasedVacuumAgent():
 
     def program(percept):
         """Same as ReflexVacuumAgent, except if everything is clean, do NoOp."""
-        # TODO
-        pass
+        location, status = percept
+        row, col = location
+        model[location] = status
+
+        if len(model) == rows * columns and all(value == 'Clean' for value in model.values()):
+            return 'NoOp'
+
+        if status == 'Dirty':
+            return 'Suck'
+
+        if col == columns - 1:
+            if row == 0:
+                return 'Left'
+            return 'Up'
+
+        if row % 2 == 1:
+            if col == columns - 2 and row != rows - 1:
+                return 'Down'
+            return 'Right'
+
+        if row % 2 == 0:
+            if col == 0:
+                return 'Down'
+            return 'Left'
 
     return Agent(program)
 
@@ -190,41 +238,50 @@ class TrivialVacuumEnvironment(Environment):
             status_matrix.append(row)
         return status_matrix
 
-
     def percept(self, agent):
         """Returns the agent's location, and the location status (Dirty/Clean)."""
-        return (agent.location, self.status[agent.location])
+        row, col = agent.location
+        return (agent.location, self.status[row][col])
 
     def execute_action(self, agent, action):
         """Change agent's location and/or location's status; track performance.
         Score 10 for each dirt cleaned; -1 for each move."""
+        row, col = agent.location
         if action == 'Right':
-            agent.location = loc_B
+            agent.location = (row, col + 1)
             agent.performance -= 1
         elif action == 'Left':
-            agent.location = loc_A
+            agent.location = (row, col - 1)
+            agent.performance -= 1
+        elif action == 'Up':
+            agent.location = (row - 1, col)
+            agent.performance -= 1
+        elif action == 'Down':
+            agent.location = (row + 1, col)
             agent.performance -= 1
         elif action == 'Suck':
-            if self.status[agent.location] == 'Dirty':
+            if self.status[row][col] == 'Dirty':
                 agent.performance += 10
-            self.status[agent.location] = 'Clean'
+            self.status[row][col] = 'Clean'
 
     def default_location(self, thing):
         """Agents start in either location at random."""
-        return random.choice([loc_A, loc_B])
+        random_row = random.randint(0, rows - 1)
+        random_column = random.randint(0, columns - 1)
+        return random_row, random_column
 
 
 def main():
     a = ReflexVacuumAgent()
-    a.program((loc_A, 'Clean'))
-    a.program((loc_B, 'Clean'))
-    a.program((loc_A, 'Dirty'))
-    a.program((loc_A, 'Dirty'))
+    a.program(((0, 0), 'Clean'))
+    a.program(((1, 1), 'Clean'))
+    a.program(((1, 2), 'Dirty'))
+    a.program(((2, 2), 'Dirty'))
 
     e = TrivialVacuumEnvironment(rows, columns)
     # e.add_thing(TraceAgent(ReflexVacuumAgent()))
     e.add_thing(TraceAgent(ModelBasedVacuumAgent()))
-    e.run(5)
+    e.run(72)
 
 
 if __name__ == "__main__":
