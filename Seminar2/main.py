@@ -66,13 +66,13 @@ def dfs(map: Map, start, goal):
     while not stack.empty():
         current = stack.get()
         if current == goal:
-            break
+            return came_from
         else:
             for next in map.neighbors(current):
                 if next not in came_from:
                     stack.put(next)
                     came_from[next] = current
-    return came_from
+    return None
 
 
 def make_path(came_from, start, goal):
@@ -95,7 +95,7 @@ def astar(map: Map, start, goal):
         current = queue.get()
 
         if current == goal:
-            break
+            return make_path(came_from, start, goal)
 
         for neighbour in map.neighbors(current):
             new_cost = cost_so_far[current] + distance(current, neighbour)
@@ -105,8 +105,7 @@ def astar(map: Map, start, goal):
                 priority = distance(neighbour, goal) + new_cost
                 queue.put(neighbour, priority)
                 came_from[neighbour] = current
-
-    return make_path(came_from, start, goal)
+    return None
 
 
 def show_path(path, map):
